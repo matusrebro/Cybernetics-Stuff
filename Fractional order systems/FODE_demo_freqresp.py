@@ -1,6 +1,4 @@
 from scipy.special import binom
-from scipy.special import gamma
-from Mittag_Leffler import mlf
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -52,14 +50,14 @@ for w in [1,5,10]:
     plt.legend(loc=0,fontsize=11)
     sbn=sbn+1
     
-plt.tight_layout()
-plt.savefig(r'FODE_freqresp_demo_output_'+str(w)+'.pdf')
-plt.close()
+    plt.tight_layout()
+    plt.savefig(r'FODE_freqresp_demo_output_'+str(w)+'.pdf')
+    plt.close()
 
 
 # frequency response
 # comparison of analytic and numeric solution
-w=np.arange(0,1000.1,0.1)
+w=np.logspace(-1,3,1000)
 
 # amplitude
 N=20*np.log10(np.abs(b/((1j*w)**alpha+1)))
@@ -96,7 +94,7 @@ plt.close()
 
 
 # phase
-w=np.arange(0,1000.1,0.1)
+w=np.logspace(-1,3,1000)
 N=np.rad2deg(np.angle(b/((1j*w)**alpha+1)))
 plt.figure()
 plt.semilogx(w,N,label='Transfer function')
@@ -129,4 +127,33 @@ plt.tight_layout()
 plt.savefig('FODE_freqresp_demo_Bode_phase.pdf')
 plt.close()
 
+# frequency response comparison of different system orders
+w=np.logspace(-1,3,1000)
 
+# amplitude
+plt.figure()
+for alpha in [0.2,0.4,0.6,0.8,1.0]:
+    N=20*np.log10(np.abs(b/((1j*w)**alpha+1)))
+    plt.semilogx(w,N,label=r'$\alpha=$'+str(alpha))
+
+plt.xlabel(r'$\omega$ [rad/s]',fontsize=16)
+plt.ylabel(r'$M$ [dB]',fontsize=16)
+plt.legend(loc=0,fontsize=15)
+plt.tight_layout()
+plt.savefig('FODE_freqresp_demo_Bode_mag_order_effect.pdf')
+plt.close()
+
+
+# phase
+w=np.logspace(-1,3,1000)
+plt.figure()
+for alpha in [0.2,0.4,0.6,0.8,1.0]:
+    N=np.rad2deg(np.angle(b/((1j*w)**alpha+1)))
+    plt.semilogx(w,N,label=r'$\alpha=$'+str(alpha))
+
+plt.xlabel(r'$\omega$ [rad/s]',fontsize=16)
+plt.ylabel(r'$\Delta\varphi$ [deg]',fontsize=16)
+plt.legend(loc=0,fontsize=15)
+plt.tight_layout()
+plt.savefig('FODE_freqresp_demo_Bode_phase_order_effect.pdf')
+plt.close()
