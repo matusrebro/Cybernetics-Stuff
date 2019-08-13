@@ -1,6 +1,6 @@
 """
 
-Here, step responses of PID controller are plotted
+Here, step responses of discrete PID controller are plotted
 
 all gains or controller parameters are equal to one and
 derivative time constant is equal to sampling time (simulation step)
@@ -10,15 +10,15 @@ derivative time constant is equal to sampling time (simulation step)
 import numpy as np
 import matplotlib.pyplot as plt
 
-from controller_fcns import pid_cont
+from controller_fcns import pid_disc
 
 Ts=0.05
 t=np.arange(0,3,Ts)
 e=np.ones_like(t)
 u=np.zeros_like(t)
 
-
-Td=Ts*1
+# beware: Td > Ts 
+Td=Ts*2
 
 
 # --- step responses ---
@@ -33,7 +33,7 @@ Kd=0
 p= [Kp, Ki, Kd, Td]
 xp=np.zeros(2)
 for k in range(0,len(t)):
-    u[k], xp = pid_cont(e[k],xp,p,Ts)
+    u[k], xp = pid_disc(e[k],xp,p,Ts)
     
 plt.plot(t,u,'r',label='P controller')    
 
@@ -44,9 +44,13 @@ Kd=0
 p= [Kp, Ki, Kd, Td]
 xp=np.zeros(2)
 for k in range(0,len(t)):
-    u[k], xp = pid_cont(e[k],xp,p,Ts)
+    u[k], xp = pid_disc(e[k],xp,p,Ts)
     
 plt.plot(t,u,'b',label='PI controller')    
+
+
+
+
     
 # --- PD controller ---
 Kp=1
@@ -55,7 +59,7 @@ Kd=1
 p= [Kp, Ki, Kd, Td]
 xp=np.zeros(2)
 for k in range(0,len(t)):
-    u[k], xp = pid_cont(e[k],xp,p,Ts)
+    u[k], xp = pid_disc(e[k],xp,p,Ts)
     
 plt.plot(t,u,'k',label='PD controller')  
     
@@ -66,7 +70,7 @@ Kd=1
 p= [Kp, Ki, Kd, Td]
 xp=np.zeros(2)
 for k in range(0,len(t)):
-    u[k], xp = pid_cont(e[k],xp,p,Ts)
+    u[k], xp = pid_disc(e[k],xp,p,Ts)
     
 plt.plot(t,u,'m',label='PID controller')  
 plt.xlabel('time [s]')
