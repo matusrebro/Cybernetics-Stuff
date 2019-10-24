@@ -1,8 +1,11 @@
-# In this script, simple demo of classic respones of
-# one-compartmental fractional order system is showed
-# system is in form: Y(s)=   b / (s^alpha+b)  U(s)
-# where 0 < alpha < 1
+"""
 
+In this script, simple demo of classic responses of
+one-compartmental fractional order system is showed.
+System is in form: Y(s)=   b / (s^alpha+b)  U(s)
+where 0 < alpha < 1
+
+"""
 # initial value problem (IVP), impulse and step response
 
 from scipy.special import binom
@@ -137,5 +140,5 @@ plt.legend()
 plt.grid()
 
 plt.tight_layout()
-plt.savefig('FODE_demo_1_output.pdf')
+plt.savefig('figs/FODE_demo_1_output.pdf')
 plt.close()  
