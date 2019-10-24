@@ -11,7 +11,7 @@ from scipy.special import binom
 import matplotlib.pyplot as plt
 import numpy as np
 
-# these function are needed for Grunwald-Letnikov
+# these functions are needed for Grunwald-Letnikov
 # fractional order integration approximation
 def omega(j,alpha):
     return (-1)**j*binom(alpha,j)
