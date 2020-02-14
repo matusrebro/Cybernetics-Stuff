@@ -10,13 +10,43 @@ import numpy as np
 class Prediction:
     
     # ARX prediction N-steps ahead
-    def arx_pred(h, theta, N):
-        if len(theta.shape)==1:
+    def arx_pred(ny, nu, h, theta, N):
+        
+        
+        """
+        
+        Model structure example for 2x2 MIMO system:
+            
+        y1[k] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] * Theta1
+        y2[k] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] * Theta2
+        
+        and thus:
+            
+        [y1[k] y2[k]] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] [Theta1 Theta2]
+        
+        ny : orders of all outputs to model, eg. ny = [1, 1]
+        nu : orders of all inputs to model, eg. nu = [1, 1]
+        h : regressor vector which eg. h = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]]
+        
+        """
+        
+        # check for theta vector shape
+        if len(theta.shape) == 1:
             outputCount = 1
-        elif len(theta.shape)>1:
+        elif len(theta.shape) > 1:
             outputCount = theta.shape[1]
         else:
             raise ValueError("Invalid theta shape")
+        
+        
+        if len(ny) != outputCount:
+            raise ValueError("Invalid ny vector length")
+            
+        if np.sum(ny) + np.sum(nu) != len(h):
+            raise ValueError("Length of h vector doesnt equal to sum of orders of inputs and outputs")
+        
+        
+        nyu = np.concatenate((ny, nu))
         
         if N>0:
             if N==1:
@@ -25,7 +55,13 @@ class Prediction:
                 y = np.zeros([N,outputCount])
                 
                 for k in range(N):
-                    if k>0:
+                    if k > 0:
+                        
+                        for n in range(0,len(nyu)-1):
+                            
+                            hp = np.roll( h[ n*nyu[n] :n*nyu[n]+1  ] )
+                        
+                        
                         yp=np.roll(yp,1)
                         yp[0]=y[k-1]
                         up=np.roll(up,1)
