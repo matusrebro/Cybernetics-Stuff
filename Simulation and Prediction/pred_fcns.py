@@ -15,7 +15,7 @@ class Prediction:
         
         """
         
-        Model structure example for 2x2 MIMO system:
+        Model structure: example for 2x2 MIMO system:
             
         y1[k] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] * Theta1
         y2[k] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] * Theta2
@@ -26,7 +26,7 @@ class Prediction:
         
         ny : orders of all outputs to model, eg. ny = [1, 1]
         nu : orders of all inputs to model, eg. nu = [1, 1]
-        h : regressor vector which eg. h = [ -y1[k-1]  -y2[k-1]  u1[k-1]  u2[k-1]]
+        h : regressor vector eg. h = [ -y1[k-1]  -y2[k-1]  u1[k-1]  u2[k-1] ]
         
         """
         
@@ -96,18 +96,55 @@ class Simulation:
             up[0]=u[k]        
         return y
 
+
+
 class ParameterEstimation:
     
     # ARX model parameter estimation via Least-Squares method
-    def arx_par_est(na,nb,y,u):
-        H=np.zeros([len(y),na+nb])
+    def arx_par_est(ny,nu,y,u):
+        
+        if y.shape[0] != u.shape[0]:
+            raise ValueError("Input and output array length must match")
+        
+        if len(y.shape) == 1:
+            outputCount = 1
+        elif len(y.shape) > 1:
+            outputCount = y.shape[1]
+        else:
+            raise ValueError("Invalid output array shape")
+        
+        if len(u.shape) == 1:
+            inputCount = 1
+        elif len(u.shape) > 1:
+            inputCount = u.shape[1]
+        else:
+            raise ValueError("Invalid input array shape")        
+        
+        if len(ny) != outputCount or len(nu) != inputCount:
+            raise ValueError("Input or output dimensions do not match the sizes of ny/nu arrays")
+        
+        
+        nyu = np.concatenate((ny, nu))
+        
+        # regressor matrix initialization
+        H=np.zeros([y.shape[0],np.sum(nyu)])
+        
+        # filling up the matrix with output and input signals
         for k in range(H.shape[1]):
-            if k<na:
-                H[:,k]=-np.roll(y,k+1)
-                H[0:k+1,k] = np.zeros(k+1)
-            else:
-                H[:,k]=np.roll(u,k+1-na)
-                H[0:k+1-na,k] = np.zeros(k+1-na)
+            index = 0
+            n_index = 0
+            for n in nyu:
+                for k in range(n):
+                    if n_index < outputCount:
+                        H[:,index+k] = np.roll(y[:,n_index],k+1)
+                        H[0:k+1,index+k] = np.zeros(k+1)
+                    else:
+                        H[:,index+k] = np.roll(u[:,n_index - outputCount],k+1)
+                H[0:k+1,index+k] = np.zeros(k+1)       
+                        
+                index = index + n
+                n_index = n_index + 1
+            
         return np.linalg.lstsq(H, y, rcond=None)[0]
 
 
