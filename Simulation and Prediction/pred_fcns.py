@@ -22,11 +22,11 @@ class Prediction:
         
         and thus:
             
-        [y1[k] y2[k]] = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]] [Theta1 Theta2]
+        [y1[k] y2[k]] = [ -y1[k-1]  -y2[k-1]  u1[k-1]  u2[k-1]] [Theta1 Theta2]
         
         ny : orders of all outputs to model, eg. ny = [1, 1]
         nu : orders of all inputs to model, eg. nu = [1, 1]
-        h : regressor vector which eg. h = [ -y1[k-1]  -y2[k-1] + u1[k-1] + u2[k-1]]
+        h : regressor vector which eg. h = [ -y1[k-1]  -y2[k-1]  u1[k-1]  u2[k-1]]
         
         """
         
@@ -46,27 +46,33 @@ class Prediction:
             raise ValueError("Length of h vector doesnt equal to sum of orders of inputs and outputs")
         
         
-        nyu = np.concatenate((ny, nu))
+        nyu = np.concatenate((ny, nu)) # orders of both inputs and outputs of model
         
         if N>0:
             if N==1:
-                y = np.dot(h,theta)
+                y = np.dot(h,theta) # case of one step ahead prediction
             else:
-                y = np.zeros([N,outputCount])
+                y = np.zeros([N,outputCount]) # case of multiple steps ahead prediction
                 
                 for k in range(N):
+                    # here happens all of recursion stuff for prediction
                     if k > 0:
                         
-                        for n in range(0,len(nyu)-1):
+                        index = 0 # starting index by which we locate which part of regressor vector we can shift
+                        n_index = 0 # keeping count of the inner-most loop iteration
+                        for n in nyu:
+                            # here happens shifting in discrete time
+                            h[index : n+index] = np.roll( h[index : n+index], 1)
+                            # differentiation between inputs and outputs
+                            if n_index < outputCount:
+                                h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
+                            else:
+                                h[index] = 0 # since, model input are not predicted we put zero value here
                             
-                            hp = np.roll( h[ n*nyu[n] :n*nyu[n]+1  ] )
-                        
-                        
-                        yp=np.roll(yp,1)
-                        yp[0]=y[k-1]
-                        up=np.roll(up,1)
-                        up[0]=0
-                    y[k]=-np.dot(yp,theta_AR) + np.dot(up,theta_X)
+                            index = index + n
+                            n_index = n_index +1
+
+                    y[k,:] = np.dot(h, theta) # one step ahead prediction
         else:
             raise ValueError("Prediction horizon N must be greater than zero")
         
