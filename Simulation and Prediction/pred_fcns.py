@@ -67,7 +67,7 @@ class Prediction:
                             if n_index < outputCount:
                                 h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
                             else:
-                                h[index] = 0 # since, model input are not predicted we put zero value here
+                                h[index] = 0 # since model input are not predicted we put zero value here
                             
                             index = index + n
                             n_index = n_index +1
@@ -82,13 +82,60 @@ class Prediction:
 class Simulation:
 
     # ARX model simulation for input u
-    def arx_sim(u,y0,theta_AR,theta_X):
-        y=np.zeros_like(u)
-        y[0]=y0
-        yp=np.zeros_like(theta_AR)
-        yp[0]=y0
-        up=np.zeros_like(theta_X)
-        for k in range(1,len(u)):
+    def arx_sim(ny, nu, u, y0, theta):
+        
+        # check for theta vector shape
+        if len(theta.shape) == 1:
+            outputCount = 1
+        elif len(theta.shape) > 1:
+            outputCount = theta.shape[1]
+        else:
+            raise ValueError("Invalid theta shape")
+        
+        if len(u.shape) == 1:
+            inputCount = 1
+        elif len(u.shape) > 1:
+            inputCount = u.shape[1]
+        else:
+            raise ValueError("Invalid input array shape")     
+        
+        nyu = np.concatenate((ny, nu))
+        
+        y=np.zeros([u.shape[0], outputCount])
+        y[0, :]=y0
+
+        h = np.zeros(np.sum(nyu))
+        
+        for hk in range(np.sum(ny)):
+            
+        
+        
+        for k in range(1,u.shape[0]):
+            
+            
+            
+            index = 0 # starting index by which we locate which part of regressor vector we can shift
+            n_index = 0 # keeping count of the inner-most loop iteration
+            for n in nyu:
+                # here happens shifting in discrete time
+                h[index : n+index] = np.roll( h[index : n+index], 1)
+                # differentiation between inputs and outputs
+                if n_index < outputCount:
+                    h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
+                else:
+                    h[index] = 0 # since, model input are not predicted we put zero value here
+                
+                index = index + n
+                n_index = n_index +1
+
+            y[k,:] = np.dot(h, theta) # one step ahead prediction
+            
+            
+            
+            
+            
+            
+            
             y[k]=-np.dot(yp,theta_AR) + np.dot(up,theta_X)
             yp=np.roll(yp,1)
             yp[0]=y[k]
