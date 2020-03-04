@@ -11,19 +11,14 @@ from scipy.signal import tf2ss, ss2tf
 
 
 def fun_lin_sys_odes(x,t,u,A,B):
-    if np.size(u)==1:
-        return np.squeeze(np.dot(A,x)+np.squeeze(B*u))
-    else:      
-        return np.squeeze(np.dot(A,x)+np.dot(B,u))
+    return np.squeeze(np.dot(A,x)+np.dot(B,u))
 
 def sim_lin_sys_ss(u, x0, A, B, C, D, Ts):
-    x = odeint(fun_lin_sys_odes,x0,np.linspace(0,Ts),
+    x = odeint(fun_lin_sys_odes, x0, np.linspace(0,Ts),
              args=(u,A,B), rtol=1e-5
              )[-1,:]
-    if np.size(u)==1:
-        y=np.dot(np.transpose(C),x) + np.squeeze(D*u)
-    else:
-        y=np.dot(np.transpose(C),x) + np.dot(D,u)
+    
+    y = np.dot(C ,x) + np.dot(D, u)
     return x, y
 
 
@@ -38,8 +33,6 @@ class lin_model:
     den = []
     
     x0 = 0
-    x = 0
-    y = 0
     
     def __init__(self, parameters):
         
@@ -81,14 +74,23 @@ class lin_model:
             output_count = self.C.shape[0]
 
         y = np.zeros([len(t), output_count])
+
+        if len(u.shape) == 1:
+            u.shape = (u.shape[0], 1)
         
         for k in range(1, len(t)):
             self.x0, y[k] = sim_lin_sys_ss(u[k-1,:], self.x0, self.A, self.B, self.C, self.D, Ts)
             x[k, :] = self.x0
             
-        self.x - x
-        self.y = y
-        
+        return x, y
     
+    
+    def freq_response(self, omega):
+        jomega = 1j * omega
+        nyquist = np.polyval(self.num, jomega) / np.polyval(self.den, jomega)
+        mag = 20 * np.log10(nyquist)
+        phase = np.rad2deg(np.angle(nyquist))
+        
+        return mag, phase, nyquist
     
     
