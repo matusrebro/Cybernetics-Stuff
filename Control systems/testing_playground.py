@@ -55,7 +55,7 @@ phase = []
 index = 1
 for j in range(2):
     for k in range(2):
-        nuquistk = np.polyval(num[j][k], jomega) / np.polyval(den, jomega)
+        nuquistk = np.polyval(num[k][j], jomega) / np.polyval(den, jomega)
         magk = 20 * np.log10(nuquistk)
         phasek = np.rad2deg(np.angle(nuquistk))
         
