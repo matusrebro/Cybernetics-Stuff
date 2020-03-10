@@ -15,6 +15,7 @@ den = [1, 2, 1]
 model1 = lin_model([num, den])
 
 model1.input_count
+model1.num
 
 x0 = [0, 0]
 
@@ -38,16 +39,30 @@ D = [[0], [0]]
 
 model2 = lin_model([A, B, C, D])
 
+model2.input_count
+
 model2.num
+model2.den
+
+model2.zeros
+model2.poles
+
+model2.static_gain
+model2.hf_gain
+
+mag, phase, nyquist = model2.freq_response(omega)
 
 
 num = []
 
 for k in range(model2.input_count):
     numk, den = ss2tf(A, B, C, D, input = k)
+    for numkk in numk:
+        print(numkk)
+        print(np.roots(numkk))
     num.append(numk)
 
-np.squeeze(num)
+
 
 nyquist = []
 mag = []
@@ -57,12 +72,13 @@ omega = np.logspace(-3, 3, 100)
 jomega = 1j * omega
 for j in range(model2.output_count):
     for k in range(model2.input_count):
+        print(str(j)+' '+str(k))
         nuquistk = np.polyval(num[k][j], jomega) / np.polyval(den, jomega)
         magk = 20 * np.log10(np.abs(nuquistk))
         phasek = np.rad2deg(np.angle(nuquistk))
         
         plt.figure(1)
-        plt.suptitle('Nyquist plot')
+        plt.suptitle('Nyquist plot',x = 0.25)
         plt.subplot(model2.output_count,model2.input_count,index)
         plt.title('u'+str(k+1)+' -> y'+str(j+1))
         plt.plot(np.real(nuquistk), np.imag(nuquistk))
