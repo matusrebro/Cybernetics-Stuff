@@ -92,6 +92,11 @@ class lin_model:
                     self.hf_gain.append(get_first_nonzero(numkk) / get_first_nonzero(self.den))
             self.poles = np.roots(self.den)
             
+            if (self.poles>0).any():
+                print('Warning: The system is unstable')
+            if np.sum(self.poles==0)>0:
+                print('The system has astatism of order:'+str(np.sum(self.poles==0)))
+            
     def __init__(self, parameters):
         self.set_parameters(parameters)
 

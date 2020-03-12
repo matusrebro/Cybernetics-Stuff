@@ -30,7 +30,7 @@ mag, phase, nyquist = model1.freq_response(omega)
 
 
 
-A = [[-2, -1], [1, 0]]
+A = [[-2, 1], [1, 0]]
 B = [[1], [0]]
 C = [[1, 2], [6, 2]] 
 D = [[0], [0]]
@@ -44,8 +44,20 @@ model2.input_count
 model2.num
 model2.den
 
+np.squeeze(model2.num).shape
+
+A, B, C, D = tf2ss(np.squeeze(model2.num), model2.den)
+
+
+
+
 model2.zeros
 model2.poles
+
+(np.array([-1, 1])>0).any()
+
+np.sum(model2.poles==0)
+
 
 model2.static_gain
 model2.hf_gain
