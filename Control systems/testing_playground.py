@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from control_systems import lin_model
 from scipy.signal import tf2ss, ss2tf
 
-from control_systems import lin_model
 
 
 t  = np.arange(0, 10, 0.1)
@@ -30,14 +30,26 @@ mag, phase, nyquist = model1.freq_response(omega)
 
 
 
-A = [[-2, 1], [1, 0]]
-B = [[1], [0]]
+A = [[-2, -1], [1, 0]]
+B = [[1, 1], [0, 0]]
 C = [[1, 2], [6, 2]] 
-D = [[0], [0]]
+D = [[0, 0], [0, 0]]
 
 
 
 model2 = lin_model([A, B, C, D])
+
+
+
+t  = np.arange(0, 10, 0.1)
+u = np.ones([len(t), 2])
+x0 = [0, 0]
+x, y = model2.simulation(x0, t, u)
+plt.figure()
+plt.plot(t,y[:,0],label='y1')
+plt.plot(t,y[:,1],label='y2')
+plt.legend()
+
 
 model2.input_count
 
