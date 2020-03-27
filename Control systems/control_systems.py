@@ -106,7 +106,7 @@ class lin_model:
         
         Ts = t[1] - t[0]
         
-        x=np.zeros([len(t), len(x0)])
+        x = np.zeros([len(t), len(x0)])
 
         y = np.zeros([len(t), self.output_count])
 
