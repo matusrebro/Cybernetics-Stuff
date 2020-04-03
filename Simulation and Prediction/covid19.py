@@ -2,6 +2,8 @@ import requests
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.integrate import odeint
+from scipy.optimize import minimize
 
 confirmed_cases_global_link = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
 deaths_cases_global_link = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_deaths_global.csv'
@@ -51,20 +53,13 @@ I = np.asarray(confirmed_data_global)
 R = np.asarray(deaths_data_global) + np.asarray(recovered_data_global)
 S = N - I - R
 
-t = t + 1
-t = np.insert(t, 0, 0)
-
-S = np.insert(S, 0, N)
-I = np.insert(I, 0, 0)
-R = np.insert(R, 0, 0)
-
 plt.figure()
 plt.semilogy(t, S, 'k', label = 'S')
 plt.semilogy(t, I, 'r', label = 'I')
 plt.semilogy(t, R, 'b', label = 'R')
 plt.legend()
 
-def fcn_sir(t, x, par, N):
+def fcn_sir(x, t, par, N):
     S, I, R = x
     beta, gamma = par
     
@@ -73,3 +68,72 @@ def fcn_sir(t, x, par, N):
     R_dot = gamma * I
     return np.array([S_dot, I_dot, R_dot])
 
+
+def sim_sir(t, x0, par, N):
+    
+    Ts = t[1]-t[0] 
+    idx_final = int(t[-1]/Ts)+1  
+    
+    x = np.zeros([len(t), len(x0)])
+    x[0, :] = x0
+ 
+    for i in range(1,idx_final):
+        y = odeint(fcn_sir, x[i-1,:], np.linspace((i-1)*Ts,i*Ts),
+                 args=(par,
+                       N, )
+                 )
+        x[i,:] = y[-1,:]
+    return x
+    
+
+
+def lsq_sir(par, N, t, sir_data):
+    
+    Sdata = sir_data[:, 0]
+    Idata = sir_data[:, 1]
+    Rdata = sir_data[:, 2]
+    
+    x0 = [Sdata[0], Idata[0], Rdata[0]]
+    x = sim_sir(t, x0, par, N)
+    
+    S = x[:,0]
+    I = x[:,1]
+    R = x[:,2]
+    
+    return np.sum(S - Sdata)**2 + np.sum(I - Idata)**2 + np.sum(R - Rdata)**2
+
+
+sir_data = np.vstack((S, I))
+sir_data = np.vstack((sir_data, R))
+sir_data = np.transpose(sir_data)
+
+p = [0, 0]
+res = minimize(lsq_sir, p, args=(N, t, sir_data), method='Nelder-Mead')
+
+par = res.x
+
+# par = [100, 1]
+x0 = [S[0], I[0], R[0]]
+x = sim_sir(t, x0, par, N)
+
+S_sim = x[:,0]
+I_sim = x[:,1]
+R_sim = x[:,2]
+
+plt.figure()
+plt.subplot(311)
+plt.title('Susceptible')
+plt.plot(t, S, 'k.', label = 'data')
+plt.plot(t, S_sim, label = 'simulation')
+plt.legend()
+plt.subplot(312)
+plt.title('Infected')
+plt.plot(t, I, 'k.', label = 'data')
+plt.plot(t, I_sim, label = 'simulation')
+plt.legend()
+plt.subplot(313)
+plt.title('Removed = recovered + deaths')
+plt.plot(t, R, 'k.', label = 'data')
+plt.plot(t, R_sim, label = 'simulation')
+plt.legend()
+plt.tight_layout()
