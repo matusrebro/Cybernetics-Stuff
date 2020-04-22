@@ -55,4 +55,17 @@ plt.plot(t, ysim, label = 'ysim')
 plt.legend()
 
 
+yp = y[0,:]
+up = u[0,:]
+
+
+model2.h = np.zeros(np.sum(np.concatenate((ny, nu))))
+
+ypred = model2.prediction(5, yp, up)
+
+y[1:6,:]
+
+
+
+
 

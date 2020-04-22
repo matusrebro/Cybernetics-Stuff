@@ -76,15 +76,31 @@ class arx_model():
         self.init_model(ny, nu, theta, h)
     
     
-    def prediction(self, N):
+    def prediction(self, N, yp, up):
     
         nyu = np.concatenate((self.ny, self.nu)) # orders of both inputs and outputs of model
         
+        # first populate regressor with past (k-1) values
+        index = 0 # starting index by which we locate which part of regressor vector we can shift
+        n_index = 0 # keeping count of the inner-most loop iteration
+        for n in nyu:
+            # differentiation between inputs and outputs
+            if n_index < self.outputCount:
+                self.h[index] = yp[n_index] # putting last predicted value to k-1 place in regressor
+            else:
+                self.h[index] = up[n_index - self.outputCount] 
+            
+            index = index + n
+            n_index = n_index +1
+
         if N>0:
             if N==1:
                 y = np.dot(self.h, self.theta) # case of one step ahead prediction
             else:
                 y = np.zeros([N, self.outputCount]) # case of multiple steps ahead prediction
+                
+                # puttig objects regressor to temporary variable in case of N>1
+                h = self.h
                 
                 for k in range(N):
                     # here happens all of recursion stuff for prediction
@@ -94,19 +110,27 @@ class arx_model():
                         n_index = 0 # keeping count of the inner-most loop iteration
                         for n in nyu:
                             # here happens shifting in discrete time
-                            self.h[index : n+index] = np.roll( self.h[index : n+index], 1)
+                            h[index : n+index] = np.roll( h[index : n+index], 1)
                             # differentiation between inputs and outputs
                             if n_index < self.outputCount:
-                                self.h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
+                                h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
                             else:
-                                self.h[index] = 0 # since model input are not predicted we put zero value here
+                                h[index] = 0 # since model input are not predicted we put zero value here
                             
                             index = index + n
                             n_index = n_index +1
     
-                    y[k,:] = np.dot(self.h, self.theta) # one step ahead prediction
+                    y[k,:] = np.dot(h, self.theta) # one step ahead prediction
         else:
             raise ValueError("Prediction horizon N must be greater than zero")
+        
+        
+        # then we shift the regressor
+        index = 0
+        for n in nyu:
+            # here happens shifting in discrete time
+            self.h[index : n+index] = np.roll( self.h[index : n+index], 1)
+            index = index + n
         
         return y
     
@@ -115,11 +139,12 @@ class arx_model():
         
         if len(u.shape) == 1:
             inputCount = 1
+            u.shape = (u.shape[0], 1)
         elif len(u.shape) > 1:
             inputCount = u.shape[1]
         else:
-            raise ValueError("Invalid input array shape")     
-        
+            raise ValueError("Invalid input array shape")
+            
         nyu = np.concatenate((self.ny, self.nu))
         
         y = np.zeros([u.shape[0], self.outputCount])
@@ -147,7 +172,7 @@ class arx_model():
                 if n_index < self.outputCount:
                     h[index] = y[k-1, n_index] # putting last predicted value to k-1 place in regressor
                 else:
-                    h[index] = u[k-1, n_index - self.outputCount] # since, model input are not predicted we put zero value here
+                    h[index] = u[k-1, n_index - self.outputCount] 
                 
                 index = index + n
                 n_index = n_index +1
