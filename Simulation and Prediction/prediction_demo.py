@@ -13,10 +13,8 @@ y1=0.5*np.sin(2*np.pi*2*t-1)
 y2=0.1*np.sin(2*np.pi*2*t-1)
 
 
-
 ny = [2]
 nu = [2]
-
 
 model1 = arx_model(ny, nu)
 model1.parameter_estimation(y1, u)
@@ -31,20 +29,15 @@ plt.plot(t, ysim, label = 'ysim')
 plt.legend()
 
 
-
 ny = [2, 2]
 nu = [2]
-
 model2 = arx_model(ny, nu)
 
-model2.outputCount
-
-model2.h
-
-model2.theta
 
 y = np.transpose(np.vstack((y1,y2)))
-model2.parameter_estimation(y, u)
+theta = model2.parameter_estimation(y, u)
+
+model2.theta
 
 ysim = model2.simulation(u, y[0,:])
 
@@ -58,12 +51,36 @@ plt.legend()
 yp = y[0,:]
 up = u[0,:]
 
+yp = y[1,:]
+up = u[1,:]
 
-model2.h = np.zeros(np.sum(np.concatenate((ny, nu))))
+model2.reset_regressor()
 
-ypred = model2.prediction(5, yp, up)
+ypred = model2.prediction(1, yp, up)
 
-y[1:6,:]
+model2.reset_regressor()
+
+yk = y[1,:]
+model2.parameter_update(yk, yp, up)
+
+
+ny = [2, 2]
+nu = [2]
+model3 = arx_model(ny, nu)
+
+
+for k in range(1, len(y)):
+    yp = y[k-1,:]
+    up = u[k-1,:]
+    yk = y[k, :]
+    model3.parameter_update(yk, yp, up)
+
+
+
+model3.theta
+
+
+
 
 
 

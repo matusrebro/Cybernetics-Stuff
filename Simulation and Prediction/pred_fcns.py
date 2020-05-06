@@ -4,7 +4,7 @@ parameters estimators
 """
 
 import numpy as np
-
+from copy import deepcopy
 
 
 
@@ -39,7 +39,6 @@ class arx_model():
     
     def init_model(self, ny, nu, theta, h):
         
-        
         if theta is not None:
             self.theta = theta
             if len(theta.shape) == 1:
@@ -66,27 +65,35 @@ class arx_model():
         self.ny = ny
         self.nu = nu
         
-        
-        for k in range(self.outputCount):
-            self.P.append(np.eye(np.sum(ny) + np.sum(nu)))
+        # dispersion matrix
+        self.P = np.eye(np.sum(ny) + np.sum(nu)) * 1e6
     
     
     
     def __init__(self, ny, nu, theta = None, h = None):
         self.init_model(ny, nu, theta, h)
     
+    def reset_regressor(self):
+        self.h = np.zeros(np.sum(np.concatenate((self.ny, self.nu))))
     
     def prediction(self, N, yp, up):
     
         nyu = np.concatenate((self.ny, self.nu)) # orders of both inputs and outputs of model
+                
+        # shift the regressor
+        index = 0
+        for n in nyu:
+            # here happens shifting in discrete time
+            self.h[index : n+index] = np.roll( self.h[index : n+index], 1)
+            index = index + n
         
-        # first populate regressor with past (k-1) values
+        # populate regressor with past (k-1) values
         index = 0 # starting index by which we locate which part of regressor vector we can shift
         n_index = 0 # keeping count of the inner-most loop iteration
         for n in nyu:
             # differentiation between inputs and outputs
             if n_index < self.outputCount:
-                self.h[index] = yp[n_index] # putting last predicted value to k-1 place in regressor
+                self.h[index] = yp[n_index]
             else:
                 self.h[index] = up[n_index - self.outputCount] 
             
@@ -100,12 +107,11 @@ class arx_model():
                 y = np.zeros([N, self.outputCount]) # case of multiple steps ahead prediction
                 
                 # puttig objects regressor to temporary variable in case of N>1
-                h = self.h
+                h = deepcopy(self.h)
                 
                 for k in range(N):
                     # here happens all of recursion stuff for prediction
                     if k > 0:
-                        
                         index = 0 # starting index by which we locate which part of regressor vector we can shift
                         n_index = 0 # keeping count of the inner-most loop iteration
                         for n in nyu:
@@ -124,13 +130,6 @@ class arx_model():
         else:
             raise ValueError("Prediction horizon N must be greater than zero")
         
-        
-        # then we shift the regressor
-        index = 0
-        for n in nyu:
-            # here happens shifting in discrete time
-            self.h[index : n+index] = np.roll( self.h[index : n+index], 1)
-            index = index + n
         
         return y
     
@@ -233,18 +232,21 @@ class arx_model():
         self.theta = theta
         return theta
 
-    def parameter_update(self, y, u, P = None):
+    def parameter_update(self, y, yp, up, P = None):
         
         if P is None:
-            P = self.P
-            
-        e = y - self.prediction(1)
+            P = self.P 
         
+        e = np.zeros([self.outputCount, 1])
+        Y = np.zeros([len(self.h), 1])
         
-        Y = np.dot(P,self.h) / (1+np.dot(np.dot(np.transpose(self.h),P),self.h))
-        P = (P-np.dot(np.dot(Y, np.transpose(self.h)), P)) * 1/self.lambda_f
-        theta = self.theta + np.dot(Y,e)
+        # recursive least squares algorithm
+        e[:, 0] = y - self.prediction(1, yp, up)
+        Y[:, 0] = np.dot(P,self.h) / (1+np.dot(np.dot(np.transpose(self.h),P),self.h))
+        P = (P-np.dot(np.dot(Y[:, 0], np.transpose(self.h)), P)) * 1/self.lambda_f
+        theta = self.theta + np.dot(Y, np.transpose(e))
         
+        self.P = P
         self.theta = theta
         
         
